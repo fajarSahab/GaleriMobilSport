@@ -1,4 +1,7 @@
 package org.d3if3015.galerimobilsport.model
 
-class User {
-}
+data class User(
+    val name: String = "",
+    val email: String = "",
+    val photoUrl: String = ""
+)

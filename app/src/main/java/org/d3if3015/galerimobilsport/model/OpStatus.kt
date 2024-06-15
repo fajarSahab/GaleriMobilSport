@@ -1,4 +1,7 @@
 package org.d3if3015.galerimobilsport.model
 
-class OpStatus {
-}
+
+data class OpStatus(
+    var status: String,
+    var message: String?
+)

@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">GaleriMobilSport</string>
+    <string name="gambar">Gambar</string>
+    <string name="hapus">Hapus</string>
+    <string name="batal">Batal</string>
+    <string name="nama">Nama</string>
+    <string name="merek">Merek</string>
+    <string name="simpan">Simpan</string>
+    <string name="tutup">Tutup</string>
+    <string name="error">Gagal memuat data.. Koneksi error.</string>
+    <string name="try_again">Coba lagi</string>
+    <string name="logout">Logout</string>
 </resources>
