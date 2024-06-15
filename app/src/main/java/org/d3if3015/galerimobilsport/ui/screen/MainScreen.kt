@@ -7,9 +7,9 @@ import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -17,16 +17,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -61,10 +66,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.canhub.cropper.CropImageContract
+import com.canhub.cropper.CropImageContractOptions
+import com.canhub.cropper.CropImageOptions
 import com.canhub.cropper.CropImageView
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.d3if3015.galerimobilsport.BuildConfig
 import org.d3if3015.galerimobilsport.R
 import org.d3if3015.galerimobilsport.model.Mobil
 import org.d3if3015.galerimobilsport.model.User
@@ -72,6 +83,7 @@ import org.d3if3015.galerimobilsport.network.ApiStatus
 import org.d3if3015.galerimobilsport.network.MobilApi
 import org.d3if3015.galerimobilsport.network.UserDataStore
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
@@ -108,10 +120,63 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
+                actions = {
+                    IconButton(onClick = {
+                        if (user.email.isEmpty()) {
+                            CoroutineScope(Dispatchers.IO).launch { signIn(context, dataStore) }
+                        }else {
+                            showDialog = true
+                        }
+                    }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_account_circle_24),
+                            contentDescription = stringResource(id = R.string.profil),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+                val options = CropImageContractOptions(
+                    null, CropImageOptions(
+                        imageSourceIncludeGallery = false,
+                        imageSourceIncludeCamera = true,
+                        fixAspectRatio = true
+                    )
+                )
+                launcher.launch(options)
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(id = R.string.tambah_mobil)
+                )
+            }
+        }
     ){
             padding -> ScreenContent(viewModel, user.email, Modifier.padding(padding),user = user)
+        if (showDialog){
+            ProfilDialog(
+                user = user,
+                onDismissRequest = { showDialog = false }) {
+                CoroutineScope(Dispatchers.IO).launch { signOut(context, dataStore) }
+                showDialog = false
+            }
+        }
+        if (showHewanDialog) {
+            MobilDIalog(
+                bitmap = bitmap,
+                onDismissRequest = { showHewanDialog = false }) { nama, merek ->
+                viewModel.saveData(user.email, nama, merek, bitmap!!)
+                showHewanDialog = false
+            }
+        }
+
+        if (errorMessage != null){
+            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+            viewModel.clearMessage()
+        }
     }
 }
 
@@ -166,127 +231,67 @@ fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier, 
 }
 
 @Composable
-fun ListItem(
-    mobil: Mobil,
-    viewModel: MainViewModel,
-    user: User,
-    ){
-    Row {
-        Box (
-            modifier = Modifier
-                .padding(4.dp)
-                .border(1.dp, Color.Gray),
-            contentAlignment = Alignment.BottomCenter
-        ){
-            Image(
-                contentScale = ContentScale.Crop,
-                painter = painterResource(id = R.drawable.baseline_broken_image_24),
-                contentDescription = stringResource(id = R.string.gambar),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp),
-            )
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(
-                        MobilApi.getMobilUrl(mobil.imageId)
-                    )
-                    .crossfade(true)
-                    .build(),
-                contentDescription = stringResource(id = R.string.gambar, mobil.nama
-                    ),
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.loading_img),
-                error = painterResource(id = R.drawable.baseline_broken_image_24),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp),
-            )
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(Color(red = 0f, green = 0f, blue = 0f, alpha = 0.5f)),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Column(modifier = Modifier
-                    .padding(4.dp)
-                    .padding(4.dp)){
-                    Text(
-//                    text = mobil.nama,
-                        text = "Veneno",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-//                    text = mobil.merek,
-                        text = "Lamborghini",
-                        fontStyle = FontStyle.Italic,
-                        fontSize = 14.sp, color =
-                        Color.White
-                    )
-                }
-            }
-
-        }
+fun ListItem(mobil: Mobil, user: User, viewModel: MainViewModel) {
+    var onShowDeleting by remember {
+        mutableStateOf(false)
     }
-
-    Spacer(modifier = Modifier.padding(16.dp))
-    Row {
-        Box (
+    Box(modifier = Modifier
+        .padding(4.dp)
+        .border(1.dp, Color.Gray), contentAlignment = Alignment.BottomCenter) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(
+                    MobilApi.getMobilUrl(mobil.imageId)
+                )
+                .crossfade(true)
+                .build(),
+            contentDescription = stringResource(id = R.string.gambar, mobil.nama),
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(id = R.drawable.loading_img),
+            error = painterResource(id = R.drawable.baseline_broken_image_24),
             modifier = Modifier
-                .padding(4.dp)
-                .border(1.dp, Color.Gray),
-            contentAlignment = Alignment.BottomCenter
-        ){
-            Image(
-                contentScale = ContentScale.Crop,
-                painter = painterResource(id = R.drawable.baseline_broken_image_24),
-                contentDescription = stringResource(id = R.string.gambar),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp),
+                .fillMaxWidth()
+                .padding(4.dp),
+
             )
-//            AsyncImage(
-//                model = ImageRequest.Builder(LocalContext.current)
-//                    .data(""
-//                        HewanApi.getHewanUrl(mobil.imageId)
-//                    )
-//                    .crossfade(true)
-//                    .build(),
-//                contentDescription = stringResource(id = R.string.gambar, mobil.nama
-//                    ),
-//                contentScale = ContentScale.Crop,
-//                placeholder = painterResource(id = R.drawable.loading_img),
-//                error = painterResource(id = R.drawable.baseline_broken_image_24),
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(4.dp),
-//            )
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(Color(red = 0f, green = 0f, blue = 0f, alpha = 0.5f)),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Column(modifier = Modifier
-                    .padding(4.dp)
-                    .padding(4.dp)){
-                    Text(
-//                    text = mobil.nama,
-                        text = "Veneno",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-//                    text = mobil.merek,
-                        text = "Lamborghini",
-                        fontStyle = FontStyle.Italic,
-                        fontSize = 14.sp, color =
-                        Color.White
-                    )
-                }
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .background(Color(red = 0f, green = 0f, blue = 0f, alpha = 0.5f)),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ){
+            Column(modifier = Modifier
+                .padding(4.dp)
+                .padding(4.dp)){
+                Text(
+                    text = mobil.nama,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = mobil.merek,
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 14.sp, color =
+                    Color.White
+                )
+            }
+            IconButton(onClick = {
+                onShowDeleting = true
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(id = R.string.hapus),
+                    tint = MaterialTheme.colorScheme.surface
+                )
+            }
+            if (onShowDeleting){
+                DeleteDialog(
+                    onDismissRequest = { onShowDeleting = false },
+                    onConfirmation = {
+                        onShowDeleting = false
+                        viewModel.deletingData(userId = user.email, id = mobil.id)
+                    }, id = mobil.id, mobil = mobil)
             }
         }
     }
@@ -296,7 +301,7 @@ fun ListItem(
 private suspend fun signIn(context: Context, dataStore: UserDataStore){
     val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
         .setFilterByAuthorizedAccounts(false)
-//        .setServerClientId(BuildConfig.API_KEY)
+        .setServerClientId(BuildConfig.API_KEY)
         .build()
 
     val request: GetCredentialRequest = GetCredentialRequest.Builder()
@@ -317,10 +322,10 @@ private suspend fun handleSignIn(result: GetCredentialResponse, dataStore: UserD
         credential.type ==  GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL){
         try {
             val googleId = GoogleIdTokenCredential.createFrom(credential.data)
-            val nama = googleId.displayName ?: ""
+            val name = googleId.displayName ?: ""
             val email = googleId.id
             val photoUrl = googleId.profilePictureUri.toString()
-            dataStore.saveData(User(nama, email, photoUrl))
+            dataStore.saveData(User(name, email, photoUrl))
         }catch (e: GoogleIdTokenParsingException){
             Log.e("SIGN-IN", "Error: ${e.message}")
         }

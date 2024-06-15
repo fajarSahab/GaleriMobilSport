@@ -10,4 +10,6 @@
     <string name="error">Gagal memuat data.. Koneksi error.</string>
     <string name="try_again">Coba lagi</string>
     <string name="logout">Logout</string>
+    <string name="tambah_mobil">Tambah mobil</string>
+    <string name="profil">Profil</string>
 </resources>

@@ -4,6 +4,5 @@ data class Mobil(
     val id:Long,
     val nama: String,
     val merek: String,
-    val imageId: String,
-    val mine:Int
+    val imageId: String
 )

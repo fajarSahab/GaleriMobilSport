@@ -8,15 +8,15 @@ import org.d3if3015.galerimobilsport.model.Mobil
 import org.d3if3015.galerimobilsport.model.OpStatus
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.http.DELETE
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
-import retrofit2.http.Query
 
-private const val BASE_URL = "https://gh.d3ifcool.org/"
+private const val BASE_URL = "https://galerimobilsport.000webhostapp.com/"
 
 private val moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
@@ -28,23 +28,25 @@ private val retrofit = Retrofit.Builder()
     .build()
 
 interface MobilApiService {
-    @GET("api/car.php")
+    @GET("api/mobil.php")
     suspend fun getMobil(
         @Header("Authorization") userId: String
     ): List<Mobil>
 
     @Multipart
-    @POST("api/car.php")
+    @POST("api/mobil.php")
     suspend fun postMobil(
         @Header("Authorization") userId: String,
-        @Part("nama_mobil") nama: RequestBody,
-        @Part ("id_gambar")image: MultipartBody.Part,
-        @Part("merek_mobil") merek: RequestBody,
+        @Part("nama") nama: RequestBody,
+        @Part("merek") merek: RequestBody,
+        @Part image: MultipartBody.Part,
     ): OpStatus
-    @DELETE("api/car.php")
+
+    @FormUrlEncoded
+    @POST("api/deleteMobil.php")
     suspend fun deleteMobil(
         @Header("Authorization") userId: String,
-        @Query("id") id: String
+        @Field("id") id: String
     ) : OpStatus
 }
 object MobilApi {
@@ -53,7 +55,7 @@ object MobilApi {
     }
 
     fun getMobilUrl(imageId: String): String{
-        return "${BASE_URL}image.php?id=$imageId"
+        return "${BASE_URL}api/image.php?id=$imageId"
     }
 
 }

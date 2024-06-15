@@ -46,8 +46,8 @@ class MainViewModel: ViewModel() {
                 val result = MobilApi.service.postMobil(
                     userId,
                     nama.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    bitmap.toMultipartBody(),
-                    merek.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    merek.toRequestBody("text/plain".toMediaTypeOrNull()) ,
+                            bitmap.toMultipartBody(),
                 )
                 if (result.status == "success")
                     retriveData(userId)
